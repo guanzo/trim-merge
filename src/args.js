@@ -1,6 +1,6 @@
 
 function createTrimArgs(videoOption, clipOption) {
-    let { input, resolution } = videoOption
+    let { input, resize } = videoOption
     let { output, start, duration } = clipOption
     let args = [
         '-y', // Overwrite existing file without asking
@@ -12,9 +12,9 @@ function createTrimArgs(videoOption, clipOption) {
     if (duration) { // If no duration, it trims to end of file
         args.push(...['-t', duration])
     }
-    if (resolution) {
+    if (resize) {
         args.push(...[
-            `-vf`, `scale=${resolution}`,
+            `-vf`, `scale=${resize}`,
             '-async', '1'
         ])
     } else {

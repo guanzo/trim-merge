@@ -1,0 +1,19 @@
+output: Merged.mp4 # contains merged clips from video, video2, and video3
+clips:
+  - input: video.mp4 # input filename with extension is required
+    resize: 3200x1600 # Resize video clips to target resolution
+    clips: # Define the time segments you want to trim from video.mp4
+      - time: 00:15-00:20 
+        output: clip 1.mp4 # The file name of the trimmed clip
+      - time: 00:05-00:10
+        output: clip 2 # The output file extension is optional, defaults to .mp4
+  - input: video2.mp4
+    clips:
+      - time: 00:00:05-00:00:10 # Fully defined time span
+      - time: 00:15-00:20 # Defining hours is optional. Resolves to 00:00:15-00:00:20
+      - time: 25-30 # Defining minutes is optional. Resolves to 00:00:25-00:00:30
+  - input: video3.mp4
+    clips:
+      - time: 00:00:23-00:00:45 
+        # Defining an output file name is optional
+        # This clip will be created as "video3 - clip 0.mp4"

@@ -1,6 +1,5 @@
 
 const { spawn } = require('child_process')
-const fs = require('fs')
 
 const parser = require('./parser')
 const files = require('./files')
@@ -16,31 +15,21 @@ async function start(cmd) {
     doc = parser.parseConfig(doc)
     
     if (DEBUG) {
-        fs.writeFileSync('config.json', JSON.stringify(doc, null, 4))
+        files.createResolvedConfigFile(doc)
     }
     
+    // Trim && merge input videos
     let p = doc.clips.map(async option => {
         if (cmd.DO_TRIM) {
             await trimClips(option)
             if (cmd.ONLY_TRIM)
                 return
         }
-        if (cmd.DO_MERGE && option.clips.length > 1) {
-            await mergeClips(option)
-            if (!cmd.KEEP_CLIPS) {
-                files.deleteClips(option)
-            }
-        }
-
+        await doMerge(cmd, option)
     })
     await Promise.all(p)
-
-    if (cmd.DO_MERGE && doc.clips.length > 1) {
-        await mergeClips(doc)
-        if (cmd.KEEP_CLIPS) {
-            files.deleteClips(doc)
-        }
-    }
+    // Merge all clips
+    await doMerge(cmd, doc)
 }
 
 async function trimClips(option) {
@@ -63,6 +52,15 @@ async function trimClip(trimArgs) {
 
         children.push(child)
     })
+}
+
+async function doMerge(cmd, option) {
+    if (cmd.DO_MERGE && option.clips.length > 1) {
+        await mergeClips(option)
+        if (!cmd.KEEP_CLIPS) {
+            files.deleteClips(option)
+        }
+    }
 }
 
 async function mergeClips(option) {

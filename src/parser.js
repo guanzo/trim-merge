@@ -1,5 +1,6 @@
 const moment = require('moment')
 const path = require('path')
+let { getWorkingDirectory } = require('./files')
 const CONCAT_FILE = 'concat.txt'
 const MERGE_FILE = 'merged.mp4'
 
@@ -10,7 +11,7 @@ function parseConfig(option) {
 }
 
 function parseConfigFile(config) {
-    let { output } = config
+    let { output = '' } = config
     output = getOutput(output, MERGE_FILE)
     let concat = output + ' - ' + CONCAT_FILE
     return {
@@ -21,40 +22,40 @@ function parseConfigFile(config) {
 }
 
 function parseVideoOptions(video) {
-    let { output, clips } = video
-    clips = clips.map((c, i) => parseClipOptions(c, i, video))
+    let { input = '', output = '', clips } = video
+    input = getWorkingDirectory(input)
+    clips = clips.map((c, i) => parseClipOptions(c, i, input))
     if (clips.length === 1) {
         output = clips[0].output
     } else {
-        output = getOutput(output, createMergeName(video))
+        output = getOutput(output, createMergeName(input))
     }
     let concat = output + ' - ' + CONCAT_FILE
     return {
         ...video,
         clips,
+        input,
         output,
         concat
     }
 }
 
-function parseClipOptions(clip, index, video) {
-    let { output, time } = clip
+function parseClipOptions(clip, index, input) {
+    let { output = '', time } = clip
     return {
         ...clip,
-        output: getOutput(output, createClipName(clip, index, video)),
+        output: getOutput(output, createClipName(clip, index, input)),
         ...parseTimespan(time)
     }
 }
 
-function createMergeName(video) {
-    let { input } = video
+function createMergeName(input) {
     let ext = path.extname(input)
     let filename = path.basename(input, ext)
     return filename + ' - merged'  + ext
 }
 
-function createClipName(clip, index, video) {
-    let { input } = video
+function createClipName(clip, index, input) {
     let ext = path.extname(input)
     let filename = path.basename(input, ext)
     return filename + ' - clip ' + index + ext
@@ -83,11 +84,13 @@ function parseTimespan(timespan) {
 }
 // Get the output file name, create one if not given
 // Since setting a clip output is optional
+// All outputs are placed in the config files directory
 function getOutput(output, defaultOutput) {
     if (!output) 
         output = defaultOutput
-    if (!output.endsWith('.mp4'))
+    if (!path.extname(output))
         output += '.mp4'
+    output = getWorkingDirectory(output)
     return output
 }
 

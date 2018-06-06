@@ -1,9 +1,0 @@
-clips:
-  - input: video 1
-    clips:
-      - output: kali_squat
-        time: 00:00:23-00:00:45
-  - input: video 2
-    clips:
-      - output: kali_standing
-        time: 00:00:23-00:00:45

@@ -1,0 +1,5 @@
+clips:
+  - input: video.mp4
+    clips:
+      - time: 00:05-00:10
+      - time: 00:15-00:20
