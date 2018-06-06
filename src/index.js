@@ -1,6 +1,5 @@
 
 const { spawn } = require('child_process')
-
 const parser = require('./parser')
 const files = require('./files')
 const args = require('./args')

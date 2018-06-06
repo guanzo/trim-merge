@@ -1,0 +1,10 @@
+- Add a config.yml option: "ffmpeg" that expects a valid ffmpeg command, and runs that instead of trim-merge's generated ffmpeg command.
+    -Maybe allow template strings to pass in other options defined in config.yml, such as input, output and times?
+    So if the ffmpeg option is "ffmpeg {trim-start} {input} ...arbitrary ffmpeg commands {trim-end} {output} ",
+    trim-merge will fill in the templated variables
+
+    OR
+
+    Just keep it simple and pass in the user given ffmpeg command as is.
+ 
+- Add a cli option to only log the generated ffmpeg commands.

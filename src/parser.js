@@ -1,6 +1,7 @@
 const moment = require('moment')
 const path = require('path')
 let { getWorkingDirectory } = require('./files')
+
 const CONCAT_FILE = 'concat.txt'
 const MERGE_FILE = 'merged.mp4'
 
