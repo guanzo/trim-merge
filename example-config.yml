@@ -1,10 +1,9 @@
-actress: kali roses
 clips:
-  - name: video 1
+  - input: video 1
     clips:
-      - name: kali_squat
+      - output: kali_squat
         time: 00:00:23-00:00:45
-  - name: video 2
+  - input: video 2
     clips:
-      - name: kali_standing
+      - output: kali_standing
         time: 00:00:23-00:00:45

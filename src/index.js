@@ -1,171 +1,108 @@
-const moment = require('moment')
+
+const { spawn } = require('child_process')
 const fs = require('fs')
-const path = require('path')
-const CONCAT_FILE = 'concat.txt'
-const MERGE_FILE = 'merged.mp4'
 
-function createTrimArgs(videoOption, clipOption) {
-    let { input, resolution } = videoOption
-    let { output, start, duration } = clipOption
-    let args = [
-        '-y', // Overwrite existing file without asking
-        '-loglevel', 'error',
-        `-ss`, start,
-        `-i`, input,
-        `-avoid_negative_ts`, 'make_zero'
-    ]
-    if (duration) { // If no duration, it trims to end of file
-        args.push(...['-t', duration])
+const parser = require('./parser')
+const files = require('./files')
+const args = require('./args')
+
+let DEBUG
+const children = []
+
+async function start(cmd) {
+    DEBUG = cmd.DEBUG
+    
+    let doc = files.getConfigFile(cmd.input)
+    doc = parser.parseConfig(doc)
+    
+    if (DEBUG) {
+        fs.writeFileSync('config.json', JSON.stringify(doc, null, 4))
     }
-    if (resolution) {
-        args.push(...[
-            `-vf`, `scale=${resolution}`,
-            '-async', '1'
-        ])
-    } else {
-        args.push(...['-c', 'copy'])
+    
+    let p = doc.clips.map(async option => {
+        if (cmd.DO_TRIM) {
+            await trimClips(option)
+            if (cmd.ONLY_TRIM)
+                return
+        }
+        if (cmd.DO_MERGE && option.clips.length > 1) {
+            await mergeClips(option)
+            if (!cmd.KEEP_CLIPS) {
+                files.deleteClips(option)
+            }
+        }
+
+    })
+    await Promise.all(p)
+
+    if (cmd.DO_MERGE && doc.clips.length > 1) {
+        await mergeClips(doc)
+        if (cmd.KEEP_CLIPS) {
+            files.deleteClips(doc)
+        }
     }
-    args.push(output)
-    return args
 }
 
-function createConcatArgs(video) {
-    let args = [
-        '-y', // Overwrite existing file without asking
-        '-loglevel', 'error',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', video.concat,
-        '-c', 'copy',
-        video.output
-    ]
-    return args
+async function trimClips(option) {
+    let trims = option.clips
+        .filter(clip => clip.time)
+        .map(clip => {
+            let trimArgs = args.createTrimArgs(option, clip)
+            log(`trim command: ffmpeg ${trimArgs.join(' ')}`, )
+            return trimClip(trimArgs)
+        })
+    return Promise.all(trims)
 }
 
-function createConcatFile(option) {
-    let data = option.clips.map(c => `file '${c.output}' \n`).join('')
-    fs.writeFileSync(option.concat, data)
-}
+async function trimClip(trimArgs) {
+    return new Promise(res=> {
+        let child = spawn('ffmpeg', trimArgs)
+        child.on('close', res)
+        child.on('error', console.log)
+        child.stderr.pipe(process.stderr)
 
-function deleteConcatFile(file) {
-    fs.unlinkSync(file)
-}
-
-function parseConfig(option) {
-    option = parseConfigFileOptions(option)
-    option.clips = option.clips.map(parseVideoOptions)
-    return option
-}
-
-function parseConfigFileOptions(config) {
-    let { output } = config
-    if (!output)
-        output = MERGE_FILE
-    if (!output.endsWith('.mp4'))
-        output += '.mp4'
-    let concat = output + ' - ' + CONCAT_FILE
-    config = {
-        ...config,
-        output,
-        concat
-    }
-    return config
-}
-
-function parseVideoOptions(video) {
-    let { output, clips } = video
-    clips = clips.map((c, i) => parseClipOptions(c, i, video))
-    if (clips.length === 1) {
-        output = clips[0].output
-    } else {
-        if (!output)
-            output = createMergeName(video)
-        if (!output.endsWith('.mp4'))
-            output += '.mp4'
-    }
-    let concat = output + ' - ' + CONCAT_FILE
-    video = {
-        ...video,
-        clips,
-        output,
-        concat
-    }
-    return video
-}
-
-function parseClipOptions(clip, index, video) {
-    let { output } = clip
-    if (!output) 
-        output = createClipName(clip, index, video)
-    if (typeof output !== String)
-        output = String(output)
-    if (!output.endsWith('.mp4'))
-        output += '.mp4'
-    clip = {
-        ...clip,
-        output,
-        ...parseTimespan(clip.time)
-    }
-    return clip
-}
-
-function createMergeName(video) {
-    let { input } = video
-    let ext = path.extname(input)
-    let filename = path.basename(input, ext)
-    return filename + ' - merged'  + ext
-}
-
-function createClipName(clip, index, video) {
-    let { input } = video
-    let ext = path.extname(input)
-    let filename = path.basename(input, ext)
-    return filename + ' - clip ' + index + ext
-}
-
-function deleteClips(option) {
-    option.clips.forEach(c => {
-        fs.unlinkSync(c.output)
+        children.push(child)
     })
 }
 
-function parseTimespan(timespan) {
-    timespan = timespan.replace(/\s/g,'')
-    let [startTime, endTime] = timespan.split('-').map(parseTime)
-    if (!endTime) {
-        return {
-            start: startTime,
-        }
-    }
-    var start = moment.duration(startTime)
-    var end = moment.duration(endTime)
-    var duration = end.subtract(start)
-    
-    return {
-        start: startTime,
-        duration: duration.asSeconds()
-    }
+async function mergeClips(option) {
+    files.createConcatFile(option)
+    let concatArgs = args.createConcatArgs(option)
+    log(`merge command: ffmpeg ${concatArgs.join(' ')}`)
+    return new Promise(res=> {
+        let child = spawn('ffmpeg', concatArgs)
+        child.on('close', () => {
+            files.deleteConcatFile(option.concat)
+            res()
+        })
+        child.on('error', console.log)
+        child.stderr.pipe(process.stderr)
+        //child.stdout.pipe(process.stdout)
+        
+        children.push(child)
+    })
 }
 
-// Add missing time segments
-// examples:
-// in: 30       out: 00:00:30
-// in: 03:30    out: 00:03:30
-// in: 01:03:30 out: 01:03:30
-function parseTime(time) {
-    let segments = time.split(':').map(t => t.padStart(2, "0")) //force 2 digit segment)
-    while (segments.length < 3)
-        segments.unshift('00')
-    return segments.join(':')
+function killChildren() {
+    children.forEach(c => {
+        if (process.platform === "win32") {
+            let taskkill = spawn("taskkill", ["/pid", c.pid, '/f', '/t'])
+            taskkill.on('close', console.log)
+            taskkill.on('error', console.log)
+            taskkill.stderr.pipe(process.stderr)
+            taskkill.stdout.pipe(process.stdout)
+        } else {
+            c.kill()
+        }
+    })
+}
+
+function log(text) {
+    if (DEBUG)
+        console.log(text + '\n')
 }
 
 module.exports = {
-    parseConfig,
-    createTrimArgs,
-    createConcatArgs,
-    createConcatFile,
-    deleteConcatFile,
-    deleteClips,
-    parseTime,
-    parseTimespan
+    start,
+    killChildren
 }

@@ -1,6 +1,6 @@
 var chai = require('chai')
 chai.should()
-var { parseTime, parseTimespan } = require('../src')
+var { parseTime, parseTimespan } = require('../src/parser')
 
 describe('parseTime()', () => {
     it('correctly parses times', () => {
