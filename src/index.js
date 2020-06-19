@@ -9,14 +9,12 @@ const children = []
 
 async function start(cmd) {
     DEBUG = cmd.DEBUG
-    
+
     let doc = files.getConfigFile(cmd.input)
     doc = parser.parseConfig(doc)
     
-    if (DEBUG) {
-        files.createResolvedConfigFile(doc)
-    }
-    
+    log(JSON.stringify(doc, null, 4))
+
     // Trim && merge input videos
     let p = doc.clips.map(async option => {
         if (cmd.DO_TRIM) {
@@ -24,16 +22,19 @@ async function start(cmd) {
             if (cmd.ONLY_TRIM)
                 return
         }
-        await doMerge(cmd, option)
+        return doMerge(cmd, option)
     })
     await Promise.all(p)
     // Merge all clips
+    if (!doc.merge) {
+        return
+    }
     await doMerge(cmd, doc)
 }
 
 async function trimClips(option) {
     let trims = option.clips
-        .filter(clip => clip.time)
+        .filter(clip => clip.time) // only trim clips that define a timespan
         .map(clip => {
             let trimArgs = args.createTrimArgs(option, clip)
             log(`trim command: ffmpeg ${trimArgs.join(' ')}`, )
@@ -75,7 +76,7 @@ async function mergeClips(option) {
         child.on('error', console.log)
         child.stderr.pipe(process.stderr)
         //child.stdout.pipe(process.stdout)
-        
+
         children.push(child)
     })
 }
@@ -94,9 +95,13 @@ function killChildren() {
     })
 }
 
-function log(text) {
-    if (DEBUG)
-        console.log(text + '\n')
+function log(data) {
+    if (!DEBUG)
+        return
+    if (typeof data === 'string')
+        console.log(data)
+    else
+        console.log(JSON.stringify(data, null, 4))
 }
 
 module.exports = {

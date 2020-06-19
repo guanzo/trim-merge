@@ -7,7 +7,12 @@ const MERGE_FILE = 'merged.mp4'
 
 function parseConfig(option) {
     option = parseConfigFile(option)
-    option.clips = option.clips.map(parseVideoOptions)
+    const clips = option.clips.filter(c => !c.skip).map(parseVideoOptions)
+    option.clips = clips
+
+    if (option.clips.length === 1) {
+        option.output = getOutput(option.clips[0].output)
+    }
     return option
 }
 
@@ -25,27 +30,36 @@ function parseConfigFile(config) {
 function parseVideoOptions(video) {
     let { input = '', output = '', clips } = video
     input = getWorkingDirectory(input)
-    clips = clips.map((c, i) => parseClipOptions(c, i, input))
+    clips = clips.filter(c => !c.skip).map((c, i) => parseClipOptions(c, i, input, video))
     if (clips.length === 1) {
-        output = clips[0].output
+        output = getOutput(clips[0].output)
     } else {
         output = getOutput(output, createMergeName(input))
     }
-    let concat = output + ' - ' + CONCAT_FILE
+
+    if (input === output) {
+        throw new Error('Input filename cannot equal the output filename')
+    }
+
     return {
         ...video,
         clips,
         input,
         output,
-        concat
+        concat: output + ' - ' + CONCAT_FILE,
     }
 }
 
-function parseClipOptions(clip, index, input) {
+function parseClipOptions(clip, index, input, video) {
     let { output = '', time } = clip
+    if (video.clips.length === 1) {
+        output = getOutput(video.output)
+    } else {
+        output = getOutput(output, createClipName(clip, index, input))
+    }
     return {
         ...clip,
-        output: getOutput(output, createClipName(clip, index, input)),
+        output,
         ...parseTimespan(time)
     }
 }
@@ -77,7 +91,7 @@ function parseTimespan(timespan) {
     var start = moment.duration(startTime)
     var end = moment.duration(endTime)
     var duration = end.subtract(start)
-    
+
     return {
         start: startTime,
         duration: duration.asSeconds()
@@ -87,7 +101,7 @@ function parseTimespan(timespan) {
 // Since setting a clip output is optional
 // All outputs are placed in the config files directory
 function getOutput(output, defaultOutput) {
-    if (!output) 
+    if (!output)
         output = defaultOutput
     if (!path.extname(output))
         output += '.mp4'

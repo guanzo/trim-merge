@@ -1,8 +1,9 @@
-# Trim-Merge
+# Trim-Merge  
+##### Under active development
 
 Trim and - you guessed it - merge videos. There are a ton of tools out there that can trim and merge, so why use this? <nobr>Trim-merge</nobr> is focused, lightweight, and dead simple. 
 
-1. Download trim-merge and ffmpeg if you don't already have it.
+1. Download trim-merge and [ffmpeg](http://www.ffmpeg.org) if you don't already have it.
 
 // TODO :)
 
@@ -51,7 +52,7 @@ All media editing tools can trim and merge videos, but they often times have lot
 
 If you need to trim a video multiple times, doing that with a GUI can be slow and repetitive. With trim-merge you define all your trim timestamps in a text file. This allows you to bypass the GUI and move as fast as you can with the keyboard, mouse, and good ole ```Ctrl + C```.
 
-You might be thinking, "But guanzo, ffmpeg is much more powerful and i can automate ffmpeg commands with a script!". 
+You might be thinking, "But guanzo, ffmpeg is much more powerful and I can automate ffmpeg commands with a script!". 
 
 ...
 

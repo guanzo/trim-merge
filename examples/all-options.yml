@@ -1,7 +1,7 @@
 output: Merged.mp4 # contains merged clips from video, video2, and video3
 clips:
   - input: video.mp4 # input filename with extension is required
-    resize: 3200x1600 # Resize video clips to target resolution
+    resolution: 3200x1600 # resolution video clips to target resolution
     clips: # Define the time segments you want to trim from video.mp4
       - time: 00:15-00:20 
         output: clip 1.mp4 # The file name of the trimmed clip

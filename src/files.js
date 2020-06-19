@@ -33,16 +33,10 @@ function deleteClips(option) {
     })
 }
 
-function createResolvedConfigFile(doc) {
-    let filepath = getWorkingDirectory('resolved-config.json')
-    fs.writeFileSync(filepath, JSON.stringify(doc, null, 4))
-}
-
 module.exports = {
     getWorkingDirectory,
     getConfigFile,
     createConcatFile,
     deleteConcatFile,
     deleteClips,
-    createResolvedConfigFile
 }
