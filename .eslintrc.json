@@ -19,5 +19,8 @@
 		"eqeqeq": ["error","smart"],
         "no-mixed-spaces-and-tabs": 0,
         "no-process-exit": 0
+    },
+    "globals": {
+        "cl": true
     }
 }
