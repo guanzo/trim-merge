@@ -11,7 +11,8 @@
   },
   "preferGlobal": true,
   "bin": {
-    "trim-merge": "./lib/trim-merge.js"
+    "trim-merge": "./lib/trim-merge.js",
+    "spatial": "./lib/spatial.sh"
   },
   "author": "",
   "license": "ISC",
