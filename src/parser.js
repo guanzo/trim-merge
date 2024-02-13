@@ -1,6 +1,7 @@
+const fs = require('fs')
 const moment = require('moment')
 const path = require('path')
-let { getWorkingDirectory } = require('./files')
+let { getWorkingDirectory, findInputFile } = require('./files')
 
 const CONCAT_FILE = 'concat.txt'
 const MERGE_FILE = 'merged.mp4'
@@ -30,6 +31,12 @@ function parseConfigFile(config) {
 function parseVideoOptions(video) {
     let { input = '', output = '', clips } = video
     input = getWorkingDirectory(input)
+    if (!fs.existsSync(input)) {
+        input = findInputFile(input)
+    }
+    if (!fs.existsSync(input)) {
+        throw new Error(`Could not find input: ${input}`)
+    }
     clips = clips.filter(c => !c.skip).map((c, i) => parseClipOptions(c, i, input, video))
     if (clips.length === 1) {
         output = getOutput(clips[0].output)

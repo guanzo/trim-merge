@@ -5,8 +5,29 @@ const path = require('path')
 let configDirectory = ''
 
 // All inputs and outputs are relative to the config file.
-function getWorkingDirectory(output) {
-    return path.join(configDirectory, output)
+function getWorkingDirectory(inputFile) {
+    return path.join(configDirectory, inputFile)
+}
+
+// Sometimes the file is nested in a directory. The config file can optionally only
+// specify the filename, in which case we check each directory to see if it contains the file.
+function findInputFile(inputFile) {
+    const files = fs.readdirSync(configDirectory)
+    for (const file of files) {
+        const filePath = path.join(configDirectory, file);
+        const stats = fs.statSync(filePath);
+
+        if (!stats.isDirectory()) {
+            continue
+        }
+
+        const inputFilepath = path.join(filePath, inputFile)
+        if (fs.existsSync(inputFilepath)) {
+            return inputFilepath
+        }
+    }
+
+    return null
 }
 
 function getConfigFile(file) {
@@ -35,6 +56,7 @@ function deleteClips(option) {
 
 module.exports = {
     getWorkingDirectory,
+    findInputFile,
     getConfigFile,
     createConcatFile,
     deleteConcatFile,
